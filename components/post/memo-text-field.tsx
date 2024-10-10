@@ -1,10 +1,17 @@
 'use client';
 import Button from '@/components/ui/Button';
 import TextField from '@/components/ui/TextField';
+import {
+  POST_MEMO_MAX_LENGTH,
+  postSchema,
+  PostSchema,
+} from '@/lib/service/post/constraints';
 import { useUpdateMemo } from '@/lib/service/post/use-post-service';
 import { cn } from '@/lib/utils';
 import { typography } from '@/styles/typography';
-import React, { ChangeEvent, KeyboardEvent, useRef, useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import React, { useRef, useState } from 'react';
+import { useForm } from 'react-hook-form';
 
 interface MemoTextFieldProps {
   postId: string;
@@ -17,23 +24,28 @@ const MemoTextField = ({
   initialMemo = '',
   createdAt,
 }: MemoTextFieldProps) => {
-  const [memo, setMemo] = useState(initialMemo);
   const [isEditing, setIsEditing] = useState(false);
   const { mutate: updateMemoMutate } = useUpdateMemo();
+  const maxLength = POST_MEMO_MAX_LENGTH;
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm<PostSchema>({
+    resolver: zodResolver(postSchema),
+    defaultValues: {
+      memo: initialMemo,
+    },
+  });
+  const memo = watch('memo', '');
+  const textCounter = `${memo.length} / ${maxLength}`;
 
   const updateMemo = () => {
-    setIsEditing(false);
-    updateMemoMutate({ postId, content: memo });
-  };
-
-  const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-    setMemo(e.target.value);
-  };
-
-  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter') {
-      updateMemo();
-    }
+    updateMemoMutate(
+      { postId, content: memo },
+      { onSuccess: () => setIsEditing(false) },
+    );
   };
 
   const textFieldRef = useRef<HTMLTextAreaElement>(null);
@@ -53,39 +65,41 @@ const MemoTextField = ({
       ? '메모 수정'
       : '메모 등록';
 
+  const bottomText = isEditing ? textCounter : createdAt;
+
   return (
-    <div className="mt-7">
+    <form className="mt-7" onSubmit={handleSubmit(updateMemo)}>
       <TextField
         placeholder="메모를 남겨보세요 :>"
-        onChange={handleChange}
-        onKeyDown={handleKeyDown}
-        value={memo}
         className="w-full"
-        ref={textFieldRef}
         readOnly={!isEditing}
+        {...register('memo', {
+          maxLength,
+        })}
       >
         <div className="flex w-full items-end justify-between">
-          {createdAt && (
-            <span
-              className={cn(
-                typography({ scale: 'body-4' }),
-                'flex-shrink-0 text-gray-800',
-              )}
-            >
-              {createdAt}
-            </span>
-          )}
+          <span
+            className={cn(
+              typography({ scale: 'body-4' }),
+              'flex-shrink-0',
+              errors.memo !== undefined ? 'text-error-400' : 'text-gray-800',
+            )}
+          >
+            {bottomText}
+          </span>
           <Button
             variant="rounded"
             size="lg"
+            type="submit"
             onClick={handleClick}
             className="round-13"
+            disabled={Boolean(errors.memo)}
           >
             {buttonLabel}
           </Button>
         </div>
       </TextField>
-    </div>
+    </form>
   );
 };
 
