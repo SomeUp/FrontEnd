@@ -1,4 +1,5 @@
 'use client';
+import AuthProvider from '@/components/auth/auth-provider';
 import { Toaster } from '@/components/ui/Toster';
 import {
   isServer,
@@ -49,8 +50,10 @@ export default function Providers({ children }: ProvidersProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Toaster />
-      {children}
+      <AuthProvider>
+        <Toaster />
+        {children}
+      </AuthProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );
