@@ -1,9 +1,8 @@
 'use client';
 import ArchiveListItem from '@/components/archive/archive-list-item';
 import CreateArchiveDialog from '@/components/archive/create-archive-dialog';
-import MaxArchiveNumAlert from '@/components/archive/max-archive-num-alert';
+import { useToast } from '@/components/hooks/use-toast';
 import PlusOutlined from '@/components/icons/PlusOutlined';
-import { DialogTrigger } from '@/components/ui/Dialog';
 import { ARCHIVE_MAX_NUM } from '@/lib/service/archive/constraints';
 import { useAllPostCount } from '@/lib/service/post/use-post-service';
 import { cn } from '@/lib/utils';
@@ -22,9 +21,9 @@ export default function ArchiveList({
   selectedArchiveId,
   archives,
 }: ArchiveListProps) {
+  const { toast } = useToast();
   const postCountQuery = useAllPostCount();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [MaxArchiveAlertOpen, setMaxArchiveAlertOpen] = useState(false);
 
   const createArchiveDisabled = archives.length >= ARCHIVE_MAX_NUM;
 
@@ -52,22 +51,27 @@ export default function ArchiveList({
         );
       })}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogTrigger asChild>
-          <button
-            className={cn(
-              typography({ scale: 'body-5' }),
-              'flex items-center justify-between px-5 py-3 text-gray-400',
-            )}
-            disabled={createArchiveDisabled}
-          >
-            아카이브 추가
-            <PlusOutlined className="h-4 w-4" />
-          </button>
-        </DialogTrigger>
+        <button
+          className={cn(
+            typography({ scale: 'body-5' }),
+            'flex items-center justify-between px-5 py-3 text-gray-400',
+          )}
+          onClick={() => {
+            if (createArchiveDisabled) {
+              toast({
+                title: '생성할 수 있는 최대 아카이브 갯수를 초과하였습니다',
+                description: '최대 아카이브 갯수 : 20개',
+              });
+            } else {
+              setIsDialogOpen(true);
+            }
+          }}
+        >
+          아카이브 추가
+          <PlusOutlined className="h-4 w-4" />
+        </button>
+
         <CreateArchiveDialog onSuccess={() => setIsDialogOpen(false)} />
-      </Dialog>
-      <Dialog open={MaxArchiveAlertOpen} onOpenChange={setMaxArchiveAlertOpen}>
-        <MaxArchiveNumAlert />
       </Dialog>
     </div>
   );
